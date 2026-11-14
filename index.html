@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMagadeAI - Personal Gemini Chatbot</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #121212; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Header */
+        header { background-color: #1e1e1e; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        header h1 { font-size: 1.2rem; color: #4da6ff; }
+        .settings-btn { background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
+        .settings-btn:hover { background: #444; }
+
+        /* API Key Modal / Bar */
+        #api-bar { background-color: #252526; padding: 10px 20px; display: flex; gap: 10px; border-bottom: 1px solid #333; }
+        #api-key-input { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #121212; color: #fff; }
+        #save-key-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+
+        /* Chat Container */
+        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 10px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+        .user-msg { background-color: #0056b3; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .bot-msg { background-color: #2a2a2a; color: #e0e0e0; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #383838; }
+        .loading { font-style: italic; color: #888; font-size: 0.9rem; }
+
+        /* Input Area */
+        #input-area { background-color: #1e1e1e; padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        #user-input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #121212; color: #fff; font-size: 1rem; outline: none; }
+        #send-btn { background-color: #4da6ff; color: #121212; font-weight: bold; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        #send-btn:hover { background-color: #3399ff; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TMagadeAI ✨</h1>
+        <button class="settings-btn" onclick="toggleApiBar()">🔑 API Key</button>
+    </header>
+
+    <div id="api-bar">
+        <input type="password" id="api-key-input" placeholder="तुमची Gemini API Key येथे पेस्ट करा...">
+        <button id="save-key-btn" onclick="saveApiKey()">Save</button>
+    </div>
+
+    <div id="chat-box">
+        <div class="message bot-msg">नमस्कार! मी तुमचा पर्सनल TMagadeAI असिस्टंट आहे. सुरुवात करण्यासाठी वर तुमची Gemini API Key सेव्ह करा आणि मला काहीही विचारा!</div>
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="येथे मेसेज टाईप करा..." onkeypress="handleKeyPress(event)">
+        <button id="send-btn" onclick="sendMessage()">पाठवा</button>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiBar = document.getElementById('api-bar');
+
+        // पेज लोड झाल्यावर सेव्ह केलेली API Key तपासणे
+        window.onload = () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                apiKeyInput.value = savedKey;
+                apiBar.style.display = 'none'; // Key आधीच असेल तर बार लपवा
+            }
+        };
+
+        function toggleApiBar() {
+            apiBar.style.display = apiBar.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                alert('API Key तुमच्या ब्राउझरमध्ये सुरक्षित सेव्ह झाली आहे!');
+                apiBar.style.display = 'none';
+            } else {
+                alert('कृपया वैध API Key टाका.');
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function appendMessage(text, className) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            msgDiv.textContent = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv;
+        }
+
+        async function sendMessage() {
+            const prompt = userInput.value.trim();
+            const apiKey = localStorage.getItem('gemini_api_key');
+
+            if (!apiKey) {
+                alert('कृपया आधी वरच्या बॉक्समध्ये तुमची Gemini API Key सेव्ह करा!');
+                apiBar.style.display = 'flex';
+                return;
+            }
+            if (!prompt) return;
+
+            // युजरचा मेसेज स्क्रीनवर दाखवा
+            appendMessage(prompt, 'user-msg');
+            userInput.value = '';
+
+            // लोडिंग मेसेज दाखवा
+            const loadingMsg = appendMessage('विचार करत आहे...', 'bot-msg loading');
+
+            try {
+                // Gemini 2.5 Flash मॉडेलचा वापर
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                chatBox.removeChild(loadingMsg);
+
+                if (data.error) {
+                    appendMessage(`त्रुटी (Error): ${data.error.message}`, 'bot-msg');
+                } else {
+                    const reply = data.candidates[0].content.parts[0].text;
+                    appendMessage(reply, 'bot-msg');
+                }
+            } catch (error) {
+                chatBox.removeChild(loadingMsg);
+                appendMessage('नेटवर्क त्रुटी आली आहे. कृपया इंटरनेट किंवा API Key तपासा.', 'bot-msg');
+            }
+        }
+    </script>
+</body>
+</html>
