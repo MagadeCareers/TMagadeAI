@@ -3,31 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TMagadeAI - Personal Gemini Chatbot</title>
+    <title>TMagadeAI - Personal Gemini Assistant</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #121212; color: #e0e0e0; display: flex; flex-direction: column; height: 100vh; }
-        header { background-color: #1e1e1e; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        header h1 { font-size: 1.2rem; color: #4da6ff; }
-        .settings-btn { background: #333; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
-        #api-bar { background-color: #252526; padding: 10px 20px; display: flex; gap: 10px; border-bottom: 1px solid #333; }
-        #api-key-input { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #121212; color: #fff; }
-        #save-key-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .message { max-width: 85%; padding: 12px 16px; border-radius: 10px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
-        .user-msg { background-color: #0056b3; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .bot-msg { background-color: #2a2a2a; color: #e0e0e0; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #383838; }
-        .loading { font-style: italic; color: #888; font-size: 0.9rem; }
-        #input-area { background-color: #1e1e1e; padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
-        #user-input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #121212; color: #fff; font-size: 1rem; outline: none; }
-        #send-btn { background-color: #4da6ff; color: #121212; font-weight: bold; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        body { background-color: #131314; color: #e3e3e3; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Header */
+        header { background-color: #1e1f20; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        header h1 { font-size: 1.2rem; background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        .header-btns { display: flex; gap: 8px; }
+        .settings-btn { background: #2d2e30; color: #e3e3e3; border: 1px solid #444; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+        .settings-btn:hover { background: #3c3d40; }
+
+        /* API Key Bar */
+        #api-bar { background-color: #1e1f20; padding: 10px 20px; display: flex; gap: 10px; border-bottom: 1px solid #333; }
+        #api-key-input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #444; background: #131314; color: #fff; }
+        #save-key-btn { background: #4285f4; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        /* Chat Area */
+        #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+        .message { max-width: 88%; padding: 14px 18px; border-radius: 14px; line-height: 1.65; word-wrap: break-word; font-size: 0.98rem; }
+        .user-msg { background-color: #282a2c; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; white-space: pre-wrap; border: 1px solid #3c4043; }
+        .bot-msg { background-color: #1e1f20; color: #e3e3e3; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #2d2e30; }
+        
+        /* Markdown Formatting inside Bot Messages */
+        .bot-msg h1, .bot-msg h2, .bot-msg h3 { color: #8ab4f8; margin-top: 12px; margin-bottom: 6px; }
+        .bot-msg p { margin-bottom: 10px; }
+        .bot-msg p:last-child { margin-bottom: 0; }
+        .bot-msg ul, .bot-msg ol { margin-left: 22px; margin-bottom: 10px; }
+        .bot-msg li { margin-bottom: 5px; }
+        .bot-msg strong { color: #ffffff; }
+        .bot-msg table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
+        .bot-msg th, .bot-msg td { border: 1px solid #444; padding: 8px; text-align: left; }
+        .bot-msg th { background-color: #2d2e30; color: #8ab4f8; }
+        .bot-msg pre { background-color: #0d0d0d; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #333; position: relative; }
+        .bot-msg code { font-family: 'Consolas', monospace; color: #a8c7fa; font-size: 0.9rem; }
+        .copy-code-btn { position: absolute; top: 6px; right: 6px; background: #333; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+        .loading { font-style: italic; color: #9aa0a6; }
+
+        /* Input Area */
+        #input-area { background-color: #1e1f20; padding: 14px 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        #user-input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 1px solid #444; background: #131314; color: #fff; font-size: 1rem; outline: none; }
+        #user-input:focus { border-color: #8ab4f8; }
+        #send-btn { background-color: #8ab4f8; color: #131314; font-weight: bold; border: none; padding: 0 22px; border-radius: 24px; cursor: pointer; font-size: 1rem; }
+        #send-btn:hover { background-color: #aecbfa; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>TMagadeAI ✨</h1>
-        <button class="settings-btn" onclick="toggleApiBar()">🔑 API Key</button>
+        <div class="header-btns">
+            <button class="settings-btn" onclick="clearChat()">➕ नवीन चॅट</button>
+            <button class="settings-btn" onclick="toggleApiBar()">🔑 API Key</button>
+        </div>
     </header>
 
     <div id="api-bar">
@@ -36,11 +66,11 @@
     </div>
 
     <div id="chat-box">
-        <div class="message bot-msg">नमस्कार! मी तुमचा पर्सनल TMagadeAI असिस्टंट आहे. मला काहीही विचारा!</div>
+        <div class="message bot-msg">नमस्कार! मी तुमचा पर्सनल **TMagadeAI** असिस्टंट आहे. अभ्यास, कोडिंग, लेखन किंवा कोणत्याही विषयावर सविस्तर आणि अचूक माहितीसाठी मला काहीही विचारा!</div>
     </div>
 
     <div id="input-area">
-        <input type="text" id="user-input" placeholder="येथे मेसेज टाईप करा..." onkeypress="handleKeyPress(event)">
+        <input type="text" id="user-input" placeholder="येथे तुमचा प्रश्न विचारा..." onkeypress="handleKeyPress(event)">
         <button id="send-btn" onclick="sendMessage()">पाठवा</button>
     </div>
 
@@ -49,6 +79,21 @@
         const userInput = document.getElementById('user-input');
         const apiKeyInput = document.getElementById('api-key-input');
         const apiBar = document.getElementById('api-bar');
+
+        let chatHistory = [];
+
+        // Gemini सारखी हुशार, सविस्तर आणि स्पष्ट उत्तर देणारी System Instruction
+        const geminiStylePrompt = {
+            parts: [{
+                text: `तू 'TMagadeAI' आहेस — Google Gemini च्या प्रगत क्षमतेवर आधारित एक अत्यंत हुशार, तर्कशुद्ध आणि मैत्रीपूर्ण वैयक्तिक AI असिस्टंट.
+तुझी उत्तर देण्याची पद्धत अगदी खऱ्या Google Gemini सारखी असली पाहिजे:
+1. **अचूकता आणि खोली:** वापरकर्त्याच्या प्रश्नाचा खरा हेतू समजून घे. साध्या प्रश्नांची उत्तरे थेट आणि सुटसुटीत दे, तर विश्लेषणात्मक, अभ्यासविषयक (उदा. MPSC, सामान्य ज्ञान, विज्ञान, इतिहास) किंवा तांत्रिक प्रश्नांची उत्तरे सविस्तर, उदाहरणांसह आणि मुद्देसूद दे.
+2. **रचना आणि फॉरमॅटिंग:** उत्तरे वाचायला सोपी व्हावीत म्हणून योग्य ठिकाणी ठळक शब्द (**Bold**), बुलेट पॉईंट्स, क्रमांकित पायऱ्या (Step-by-step) आणि तक्त्यांचा (Markdown Tables) वापर कर.
+3. **भाषाशैली:** वापरकर्ता ज्या भाषेत (मराठी, हिंदी किंवा इंग्रजी) प्रश्न विचारेल, त्याच भाषेत नैसर्गिक, सहज आणि प्रभावी संवाद साध. मराठीत बोलताना शुद्ध आणि समजण्यास सोप्या मराठीचा वापर कर.
+4. **मार्गदर्शक भूमिका:** एखादी संकल्पना समजावून सांगताना ती सोप्या भाषेत फोडून सांग, महत्त्वाचे मुद्दे अधोरेखित कर आणि आवश्यक असल्यास शेवटी एक उपयुक्त पुढील सूचना किंवा प्रश्न विचार.
+5. **ओळख:** जर कोणी तुझी ओळख विचारली तर तू 'TMagadeAI' असून मनोज मागदे यांच्या वैयक्तिक वापरासाठी तयार केलेला प्रगत AI असिस्टंट आहेस असे सांग.`
+            }]
+        };
 
         window.onload = () => {
             const savedKey = localStorage.getItem('gemini_api_key');
@@ -73,26 +118,58 @@
             }
         }
 
+        function clearChat() {
+            chatHistory = [];
+            chatBox.innerHTML = '<div class="message bot-msg">नवीन चॅट सुरू झाले आहे. मी तुम्हाला कशी मदत करू शकतो?</div>';
+        }
+
         function handleKeyPress(event) {
             if (event.key === 'Enter') sendMessage();
         }
 
-        function appendMessage(text, className) {
+        function addCopyButtons(container) {
+            const preBlocks = container.querySelectorAll('pre');
+            preBlocks.forEach(pre => {
+                const btn = document.createElement('button');
+                btn.className = 'copy-code-btn';
+                btn.textContent = 'Copy';
+                btn.onclick = () => {
+                    const code = pre.querySelector('code')?.innerText || pre.innerText;
+                    navigator.clipboard.writeText(code);
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy', 2000);
+                };
+                pre.appendChild(btn);
+            });
+        }
+
+        function appendMessage(text, className, isMarkdown = false) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${className}`;
-            msgDiv.textContent = text;
+            if (isMarkdown && typeof marked !== 'undefined') {
+                msgDiv.innerHTML = marked.parse(text);
+                addCopyButtons(msgDiv);
+            } else {
+                msgDiv.textContent = text;
+            }
             chatBox.appendChild(msgDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
             return msgDiv;
         }
 
-        async function callGemini(model, prompt, apiKey) {
+        async function callGemini(model, apiKey) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
+                    systemInstruction: geminiStylePrompt,
+                    contents: chatHistory,
+                    generationConfig: {
+                        temperature: 0.7,
+                        topP: 0.95,
+                        maxOutputTokens: 4096
+                    }
                 })
             });
             return await response.json();
@@ -111,19 +188,20 @@
 
             appendMessage(prompt, 'user-msg');
             userInput.value = '';
-            const loadingMsg = appendMessage('विचार करत आहे...', 'bot-msg loading');
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
 
-            // क्रमाने मॉडेल्स तपासून पाहणे
+            const loadingMsg = appendMessage('विचार करत आहे...', 'bot-msg loading');
             const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
             let lastError = '';
 
             for (const model of modelsToTry) {
                 try {
-                    const data = await callGemini(model, prompt, apiKey);
+                    const data = await callGemini(model, apiKey);
                     if (!data.error && data.candidates && data.candidates[0]) {
                         chatBox.removeChild(loadingMsg);
                         const reply = data.candidates[0].content.parts[0].text;
-                        appendMessage(reply, 'bot-msg');
+                        chatHistory.push({ role: "model", parts: [{ text: reply }] });
+                        appendMessage(reply, 'bot-msg', true);
                         return;
                     } else if (data.error) {
                         lastError = `[${model}]: ${data.error.message}`;
@@ -133,6 +211,7 @@
                 }
             }
 
+            chatHistory.pop();
             chatBox.removeChild(loadingMsg);
             appendMessage(`त्रुटी आली:\n${lastError}`, 'bot-msg');
         }
